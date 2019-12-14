@@ -1,4 +1,4 @@
-package cpu1
+package cpu
 
 import (
 	"fmt"
