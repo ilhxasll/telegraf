@@ -33,8 +33,8 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 
 	bfRd := bufio.NewReader(f)
 	l := 0
-	var fields map[string]string
-	fields = make(map[string]string)
+	var fields map[string]interface{}
+	fields = make(map[string]interface{})
 	for {
 		line, err := bfRd.ReadString('\n')
 		a := strings.Split(line, "：")
