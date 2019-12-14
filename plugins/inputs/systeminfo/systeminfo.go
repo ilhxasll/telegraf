@@ -23,9 +23,6 @@ func (_ *SysInfoStats) Description() string {
 func (_ *SysInfoStats) SampleConfig() string { return "" }
 
 func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
-	if err != nil {
-		return fmt.Errorf("error getting virtual systeminfo info: %s", err)
-	}
 
 	f, err := os.Open("/etc/.systeminfo")
 	if err != nil {
@@ -113,6 +110,7 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 		}
 	}
 	acc.AddGauge("systeminfo", fields, nil)
+	return nil
 }
 
 func init() {
