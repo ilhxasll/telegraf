@@ -2,6 +2,7 @@ package systeminfo
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -25,14 +26,15 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 
 	f, err := os.Open("/etc/.systeminfo")
 	if err != nil {
+		fmt.Errorf("error getting virtual systeminfo info: %s", err)
 		return err
 	}
 	defer f.Close()
 
 	bfRd := bufio.NewReader(f)
 	l := 0
-	var fields map[string]string
-	fields = make(map[string]string)
+	var fields map[string]interface{}
+	fields = make(map[string]interface{})
 	for {
 		line, err := bfRd.ReadString('\n')
 		a := strings.Split(line, "：")
@@ -107,26 +109,7 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 			return err
 		}
 	}
-	fields2 := map[string]interface{}{
-		"pro_name":          fields["pro_name"],
-		"pro_code":          fields["pro_code"],
-		"launch_type":       fields["launch_type"],
-		"manufacturer":      fields["manufacturer"],
-		"sys_version":       fields["sys_version"],
-		"kernel":            fields["kernel"],
-		"sys_number":        fields["sys_number"],
-		"three_kernel":      fields["three_kernel"],
-		"three_version":     fields["three_version"],
-		"bios":              fields["bios"],
-		"cpu_info":          fields["cpu_info"],
-		"memory":            fields["memory"],
-		"disk_number":       fields["disk_number"],
-		"disk_capacity":     fields["disk_capacity"],
-		"mainboard_version": fields["mainboard_version"],
-		"sys_update_time":   fields["sys_update_time"],
-	}
-
-	acc.AddGauge("systeminfo", fields2, nil)
+	acc.AddGauge("systeminfo", fields, nil)
 	return nil
 }
 
