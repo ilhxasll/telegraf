@@ -2,7 +2,6 @@ package systeminfo
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -26,7 +25,6 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 
 	f, err := os.Open("/etc/.systeminfo")
 	if err != nil {
-		fmt.Errorf("error getting virtual systeminfo info: %s", err)
 		return err
 	}
 	defer f.Close()
