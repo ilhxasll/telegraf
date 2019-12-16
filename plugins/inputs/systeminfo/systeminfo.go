@@ -93,7 +93,7 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 		} else {
 			if err != nil { //遇到任何错误立即返回，并忽略 EOF 错误信息
 				if err == io.EOF {
-					return nil
+					break
 				} else {
 					l = l + 1
 				}
