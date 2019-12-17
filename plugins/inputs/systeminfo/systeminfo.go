@@ -38,7 +38,7 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 		a := strings.Split(line, "：")
 		if len(a) > 1 {
 			b := a[0]
-			c := strings.Trim(a[1], "/")
+			c := strings.Trim(a[1], "\")
 			if b == "测试" {
 				fields["测试"] = c
 			}
