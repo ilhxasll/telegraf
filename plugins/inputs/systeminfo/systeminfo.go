@@ -102,9 +102,9 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 		}
 		if err != nil { //遇到任何错误立即返回，并忽略 EOF 错误信息
 			if err == io.EOF {
-				return nil
+				break
 			}
-			return err
+			break
 		}
 	}
 	acc.AddGauge("systeminfo", fields, nil)
