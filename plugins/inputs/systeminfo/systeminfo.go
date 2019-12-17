@@ -97,7 +97,7 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 				} else {
 					l = l + 1
 				}
-				return err
+				break
 			}
 		}
 		if err != nil { //遇到任何错误立即返回，并忽略 EOF 错误信息
