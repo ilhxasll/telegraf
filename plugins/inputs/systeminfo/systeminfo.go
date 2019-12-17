@@ -38,7 +38,7 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 		a := strings.Split(line, "：")
 		if len(a) > 1 {
 			b := a[0]
-			c := a[1]
+			c := strings.Trim(a[1], "'/")
 			if b == "测试" {
 				fields["测试"] = c
 			}
@@ -97,14 +97,14 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 				} else {
 					l = l + 1
 				}
-				break
+				return nil
 			}
 		}
 		if err != nil { //遇到任何错误立即返回，并忽略 EOF 错误信息
 			if err == io.EOF {
 				break
 			}
-			break
+			return nil
 		}
 	}
 	acc.AddGauge("systeminfo", fields, nil)
