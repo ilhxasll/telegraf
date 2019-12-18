@@ -38,21 +38,21 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 		a := strings.Split(line, "：")
 		if len(a) > 1 {
 			b := a[0]
-			c := a[1]
+			c := strings.Trim(a[1], "\n")
 			if b == "测试" {
 				fields["测试"] = c
 			}
 			if b == "产品名称" {
-				fields["pro_name"] = "测试产品"
+				fields["pro_name"] = c
 			}
 			if b == "标识码（产品唯一标识）" {
-				fields["pro_code"] = 1
+				fields["pro_code"] = c
 			}
 			if b == "电磁泄露发射防护类型" {
-				fields["launch_type"] = 2
+				fields["launch_type"] = c
 			}
 			if b == "生产者（制造商）" {
-				fields["manufacturer"] = "测试产品"
+				fields["manufacturer"] = c
 			}
 			if b == "系统版本" {
 				fields["sys_version"] = c
