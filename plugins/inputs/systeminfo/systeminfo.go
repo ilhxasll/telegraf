@@ -31,8 +31,8 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 
 	bfRd := bufio.NewReader(f)
 	l := 0
-	var tags map[string]string
-	tags = make(map[string]string)
+	var fields map[string]interface{}
+	fields = make(map[string]interface{})
 	for {
 		line, err := bfRd.ReadString('\n')
 		a := strings.Split(line, "：")
@@ -40,55 +40,55 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 			b := a[0]
 			c := a[1]
 			if b == "测试" {
-				tags["测试"] = c
+				fields["测试"] = c
 			}
 			if b == "产品名称" {
-				tags["pro_name"] = c
+				fields["pro_name"] = "测试产品"
 			}
 			if b == "标识码（产品唯一标识）" {
-				tags["pro_code"] = c
+				fields["pro_code"] = 1
 			}
 			if b == "电磁泄露发射防护类型" {
-				tags["launch_type"] = c
+				fields["launch_type"] = 2
 			}
 			if b == "生产者（制造商）" {
-				tags["manufacturer"] = c
+				fields["manufacturer"] = "测试产品"
 			}
 			if b == "系统版本" {
-				tags["sys_version"] = c
+				fields["sys_version"] = c
 			}
 			if b == "内核版本" {
-				tags["kernel"] = c
+				fields["kernel"] = c
 			}
 			if b == "系统位数" {
-				tags["sys_number"] = c
+				fields["sys_number"] = c
 			}
 			if b == "三合一内核版本" {
-				tags["three_kernel"] = c
+				fields["three_kernel"] = c
 			}
 			if b == "三合一软件版本" {
-				tags["three_version"] = c
+				fields["three_version"] = c
 			}
 			if b == "固件版本（BIOS）" {
-				tags["bios"] = c
+				fields["bios"] = c
 			}
 			if b == "处理器信息" {
-				tags["cpu_info"] = c
+				fields["cpu_info"] = c
 			}
 			if b == "内存" {
-				tags["memory"] = c
+				fields["memory"] = c
 			}
 			if b == "硬盘序列号" {
-				tags["disk_number"] = c
+				fields["disk_number"] = c
 			}
 			if b == "硬盘容量" {
-				tags["disk_capacity"] = c
+				fields["disk_capacity"] = c
 			}
 			if b == "主板版本号" {
-				tags["mainboard_version"] = c
+				fields["mainboard_version"] = c
 			}
 			if b == "系统更新时间" {
-				tags["sys_update_time"] = c
+				fields["sys_update_time"] = c
 			}
 		} else {
 			if err != nil { //遇到任何错误立即返回，并忽略 EOF 错误信息
@@ -107,7 +107,7 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 			return err
 		}
 	}
-	acc.AddGauge("systeminfo", nil, tags)
+	acc.AddGauge("systeminfo", fields, nil)
 	return nil
 }
 
