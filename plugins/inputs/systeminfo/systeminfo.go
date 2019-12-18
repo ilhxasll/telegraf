@@ -107,7 +107,6 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 			return err
 		}
 	}
-	fmt.Println("fields", fields)
 	acc.AddGauge("systeminfo", nil, tags)
 	return nil
 }
