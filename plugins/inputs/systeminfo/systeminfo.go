@@ -42,81 +42,61 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 				b := a[0]
 				c := strings.Trim(a[1], "\n")
 				if b == "产品名称" {
-					fields["产品名称"] = c
-					fmt.Print("a=", fields["产品名称"])
+					fields["pro_name"] = c
 				}
 				if b == "产品型号" {
 					fields["pro_number"] = c
-					fmt.Print(fields["pro_number"])
 				}
 				if b == "标识码（产品唯一标识）" {
-					c = strings.Trim(c, "\n")
-					fields["标识码（产品唯一标识）"] = c
-					fmt.Println(fields["标识码（产品唯一标识）"])
+					fields["pro_code"] = c
 				}
 				if b == "电磁泄漏发射防护类型" {
-					fields["电磁泄露发射防护类型"] = c
-					fmt.Println(c)
+					fields["launch_type"] = c
 				}
 				if b == "生产者（制造商）" {
-					fields["生产者（制造商）"] = c
-					fmt.Println(c)
+					fields["manufacturer"] = c
 				}
 				if b == "操作系统名称" {
-					fields["操作系统名称"] = c
-					fmt.Println(c)
+					fields["os_name"] = c
 				}
 				if b == "系统版本" {
-					fields["系统版本"] = c
-					fmt.Println(c)
+					fields["sys_version"] = c
 				}
 				if b == "内核版本" {
-					fields["内核版本"] = c
-					fmt.Println(c)
+					fields["kernel"] = c
 				}
 				if b == "系统位数" {
-					fields["系统位数"] = c
-					fmt.Println(c)
+					fields["sys_number"] = c
 				}
 				if b == "I/O保密管理模块" {
-					fields["I/O保密管理模块"] = c
-					fmt.Println(c)
+					fields["io_sec_model"] = c
 				}
 				if b == "安全卡版本" {
-					fields["安全卡版本"] = c
-					fmt.Println(c)
+					fields["safe_number"] = c
 				}
 				if b == "固件版本（BIOS）" {
-					fields["固件版本（BIOS）"] = c
-					fmt.Println(c)
+					fields["bios"] = c
 				}
 				if b == "处理器信息" {
-					fields["处理器信息"] = c
-					fmt.Println(c)
+					fields["cpu_info"] = c
 				}
 				if b == "内存" {
-					fields["内存"] = c
-					fmt.Println(c)
+					fields["memory"] = c
 				}
 				if b == "硬盘序列号" {
-					fields["硬盘序列号"] = c
-					fmt.Println(c)
+					fields["disk_number"] = c
 				}
 				if b == "硬盘容量" {
-					fields["硬盘容量"] = c
-					fmt.Println(c)
+					fields["disk_capacity"] = c
 				}
 				if b == "主板版本号" {
-					fields["主板版本号"] = c
-					fmt.Println(c)
+					fields["mainboard_version"] = c
 				}
 				if b == "系统安装时间" {
-					fields["系统安装时间"] = c
-					fmt.Println(c)
+					fields["sys_begin_time"] = c
 				}
 				if b == "系统更新时间" {
-					fields["系统更新时间"] = c
-					fmt.Println(c)
+					fields["sys_update_time"] = c
 				}
 			} else {
 				if err != nil { //遇到任何错误立即返回，并忽略 EOF 错误信息
