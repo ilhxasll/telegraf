@@ -23,7 +23,7 @@ func (_ *SysInfoStats) SampleConfig() string { return "" }
 
 func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 
-	f, err := os.Open("/etc/.systeminfo1")
+	f, err := os.Open("/etc/.systeminfo")
 	if err != nil {
 		return err
 	}
