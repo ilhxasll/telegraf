@@ -248,6 +248,15 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 				if b == "固件版本（BIOS）" {
 					fields["bios"] = c
 				}
+				if b == "固件版本（BIOS)" {
+					fields["bios"] = c
+				}
+				if b == "固件版本(BIOS)" {
+					fields["bios"] = c
+				}
+				if b == "固件版本(BIOS）" {
+					fields["bios"] = c
+				}
 				if b == "处理器信息" {
 					fields["cpu_info"] = c
 				}
