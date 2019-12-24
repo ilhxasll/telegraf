@@ -104,7 +104,7 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 					} else {
 						l = l + 1
 					}
-					return err
+					break
 				}
 			}
 		} else {
