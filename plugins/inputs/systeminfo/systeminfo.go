@@ -2,7 +2,6 @@ package systeminfo
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -100,14 +99,10 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 				}
 			} else {
 				if err != nil { //遇到任何错误立即返回，并忽略 EOF 错误信息
-					fmt.Println(err)
 					if err == io.EOF {
-						fmt.Println("fields=", fields)
-						fmt.Println("l2=", l)
 						break
 					} else {
 						l = l + 1
-						fmt.Println(a)
 					}
 					return err
 				}
