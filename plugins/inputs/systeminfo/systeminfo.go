@@ -175,11 +175,11 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 			if len(a) > 1 {
 				b := a[0]
 				c := strings.Trim(a[1], "\n")
-				if b == "测试" {
-					fields["测试"] = c
-				}
 				if b == "产品名称" {
 					fields["pro_name"] = c
+				}
+				if b == "产品型号" {
+					fields["pro_number"] = c
 				}
 				if b == "标识码（产品唯一标识）" {
 					fields["pro_code"] = c
@@ -189,6 +189,9 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 				}
 				if b == "生产者（制造商）" {
 					fields["manufacturer"] = c
+				}
+				if b == "操作系统名称" {
+					fields["sys_product"] = c
 				}
 				if b == "系统版本" {
 					fields["sys_version"] = c
@@ -205,16 +208,10 @@ func (_ *SysInfoStats) Gather(acc telegraf.Accumulator) error {
 				if b == "三合一软件版本" {
 					fields["three_version"] = c
 				}
+				if b == "安全卡版本" {
+					fields["safe_number"] = c
+				}
 				if b == "固件版本（BIOS）" {
-					fields["bios"] = c
-				}
-				if b == "固件版本（BIOS)" {
-					fields["bios"] = c
-				}
-				if b == "固件版本(BIOS)" {
-					fields["bios"] = c
-				}
-				if b == "固件版本(BIOS）" {
 					fields["bios"] = c
 				}
 				if b == "处理器信息" {
