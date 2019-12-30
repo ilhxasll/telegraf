@@ -134,6 +134,7 @@ import (
 	_ "github.com/influxdata/telegraf/plugins/inputs/salesforce"
 	_ "github.com/influxdata/telegraf/plugins/inputs/sensors"
 	_ "github.com/influxdata/telegraf/plugins/inputs/smart"
+	_ "github.com/influxdata/telegraf/plugins/inputs/smnet"
 	_ "github.com/influxdata/telegraf/plugins/inputs/snmp"
 	_ "github.com/influxdata/telegraf/plugins/inputs/snmp_legacy"
 	_ "github.com/influxdata/telegraf/plugins/inputs/snmp_trap"
