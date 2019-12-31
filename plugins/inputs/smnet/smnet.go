@@ -132,7 +132,7 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 			"net_mask":     0,
 			"gateway":      gateway,
 			"mac":          tiface.HardwareAddr.String(),
-			"admin_Status": 0,
+			"admin_Status": adminStatus,
 			"run_state":    instates.RunStatus,
 			"bytes_sent":   io.BytesSent,
 			"bytes_recv":   io.BytesRecv,
