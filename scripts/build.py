@@ -88,15 +88,11 @@ targets = {
 }
 
 supported_builds = {
-    'darwin': [ "amd64" ],
-    "linux": [ "amd64", "i386", "armhf", "armel", "arm64", "static_amd64", "s390x", "mipsel", "mips","mips64el"],
-    "freebsd": [ "amd64", "i386" ]
+    "linux": [ "amd64",  "arm64", "mips","mips64el"]
 }
 
 supported_packages = {
-    "darwin": [ "tar" ],
-    "linux": [ "deb", "rpm", "tar" ],
-    "freebsd": [ "tar" ]
+    "linux": [ "deb", "rpm", "tar" ]
 }
 
 next_version = '1.14.0'
