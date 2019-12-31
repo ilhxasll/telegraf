@@ -1,4 +1,4 @@
-package net
+package smnet
 
 import (
 	"fmt"
@@ -75,7 +75,7 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 	}
 
 	//获取网关信息
-	gateways := ReadGateways()
+	//gateways := ReadGateways()
 
 	for _, io := range netio {
 		if len(s.Interfaces) != 0 {
