@@ -1,8 +1,11 @@
 package smnet
 
 import (
+	"bufio"
 	"fmt"
 	"net"
+	"os/exec"
+	"strings"
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/filter"
@@ -69,7 +72,7 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 	for _, iface := range interfaces {
 		interfacesByName[iface.Name] = iface
 	}
-	
+
 	//获取网关信息
 	gateways := ReadGateways()
 
@@ -102,9 +105,9 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 		tags := map[string]string{
 			"interface": io.Name,
 		}
-		
+
 		tiface, _ := interfacesByName[io.Name]
-		
+
 		//接口配置状态
 		var adminStatus uint32
 		flags := strings.Split(tiface.Flags.String(), "|")
@@ -113,7 +116,7 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 				adminStatus = 1
 			}
 		}
-		
+
 		//接口运行状态和网速
 		gateway, ok := gateways[io.Name]
 		if !ok {
@@ -178,9 +181,6 @@ func ReadGateways() map[string]string {
 		//一次获取一行,_ 获取当前行是否被读完
 		output, _, err := outputBuf.ReadLine()
 		if err != nil {
-			// 判断是否到文件的结尾了否则出错
-			if err.Error() != "EOF" {
-			}
 			break
 		}
 		if i < 2 {
@@ -200,7 +200,8 @@ func ReadGateways() map[string]string {
 	}
 
 	//wait 方法会一直阻塞到其所属的命令完全运行结束为止
-	if err := cmd.Wait(); 
+	if err := cmd.Wait(); err != nil {
+	}
 
 	return gateways
 }
