@@ -109,14 +109,6 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 
 		tiface, _ := interfacesByName[io.Name]
 
-		//接口配置状态
-		flags := strings.Split(tiface.Flags.String(), "|")
-		if len(flags) > 0 {
-			if strings.ReplaceAll(flags[0], " ", "") == "up" {
-				adminStatus = 1
-			}
-		}
-
 		//接口运行状态和网速
 		gateway, ok := gateways[io.Name]
 		if !ok {
