@@ -2,15 +2,13 @@ package smnet
 
 import (
 	"fmt"
-	"log"
 	"net"
-	"strconv"
-	"strings"
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/filter"
 	"github.com/influxdata/telegraf/plugins/inputs"
 	"github.com/influxdata/telegraf/plugins/inputs/system"
+	"github.com/safchain/ethtool"
 )
 
 //zhaojyun smnet
@@ -22,12 +20,6 @@ type SMNetIOStats struct {
 	IgnoreProtocolStats bool
 	Interfaces          []string
 }
-
-//zhaojianyun 接口最大网速与网路接口状态
-//type SMIORunStatus struct {
-//	RunStatus uint32
-//	Speed     uint64
-//}
 
 func (_ *SMNetIOStats) Description() string {
 	return "Read metrics about network interface usage"
@@ -54,7 +46,7 @@ func (_ *SMNetIOStats) SampleConfig() string {
 func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 	netio, err := s.ps.NetIO()
 	if err != nil {
-
+		return fmt.Errorf("error getting net io info: %s", err)
 	}
 
 	if s.filter == nil {
@@ -67,15 +59,10 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 	if err != nil {
 		return fmt.Errorf("error getting list of interfaces: %s", err)
 	}
-
-	//网络接口map
 	interfacesByName := map[string]net.Interface{}
 	for _, iface := range interfaces {
 		interfacesByName[iface.Name] = iface
 	}
-
-	//获取网关信息
-	//gateways := ReadGateways()
 
 	for _, io := range netio {
 		if len(s.Interfaces) != 0 {
@@ -107,38 +94,20 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 			"interface": io.Name,
 		}
 
+		instates := ReadRunStatus(io.Name)
 		tiface, _ := interfacesByName[io.Name]
-
-		//解析mask地址
-		ip, mask, _ := ParseIPMask(tiface)
-
-		//接口配置状态
-		//var adminStatus uint32
-		//flags := strings.Split(tiface.Flags.String(), "|")
-		//if len(flags) > 0 {
-		//	if strings.ReplaceAll(flags[0], " ", "") == "up" {
-		//		adminStatus = 1
-		//	}
-		//}
-		//接口运行状态和网速
-		//gateway, ok := gateways[io.Name]
-		//if !ok {
-		//	gateway = "---"
-		//}
-		//instates := ReadRunStatus(io.Name)
-
 		fields := map[string]interface{}{
 			//"sdd" : iface.
-			"index": tiface.Index,
-			"name":  tiface.Name,
-			"mtu":   tiface.MTU,
-			//"speed":        instates.Speed,
-			"ip":       ip,
-			"net_mask": mask,
-			//"gateway":      gateway,
-			"mac": tiface.HardwareAddr.String(),
-			//"admin_status": adminStatus,
-			//"run_status":   instates.RunStatus,
+			"index":        tiface.Index,
+			"name":         tiface.Name,
+			"mtu":          tiface.MTU,
+			"speed":        instates.Speed,
+			"ip":           0,
+			"net_mask":     0,
+			"gateway":      0,
+			"mac":          tiface.HardwareAddr.String(),
+			"admin_Status": 0,
+			"run_state":    instates.RunStatus,
 			"bytes_sent":   io.BytesSent,
 			"bytes_recv":   io.BytesRecv,
 			"packets_sent": io.PacketsSent,
@@ -158,38 +127,35 @@ func init() {
 	inputs.Add("smnet", func() telegraf.Input {
 		return &SMNetIOStats{ps: system.NewSystemPS()}
 	})
-
 }
 
 /*
- * 函数名： ParseIPMask(iface net.Interface)
- * 作用：根据IP解析Mask地址
- * 返回值：IP地址，MASK地址
+ * 函数名： ReadRunStatus(ifacename string)
+ * 作用：获取接口运行状态和网速
+ * 返回值：SMIORunStatus
  */
-func ParseIPMask(iface net.Interface) (string, string, error) {
-	ipv4 := "--"
-	mask := "--"
-	adds, err := iface.Addrs()
-	if err != nil {
-		log.Fatal("get network addr failed: ", err)
-		return ipv4, mask, nil
+func ReadRunStatus(ifacename string) SMIORunStatus {
+
+	//获取ethtool命令句柄
+	ethHandle, err := ethtool.NewEthtool()
+
+	defer ethHandle.Close()
+
+	var instates SMIORunStatus
+
+	//获取接口运行状态
+	stats, err := ethHandle.LinkState(ifacename)
+	if err == nil {
+		instates.RunStatus = stats
 	}
-	for _, ip := range adds {
-		if strings.Contains(ip.String(), ".") {
-			_, ipNet, err := net.ParseCIDR(ip.String())
-			if err != nil {
-				return ipv4, mask, nil
-			}
-			val := make([]byte, len(ipNet.Mask))
-			copy(val, ipNet.Mask)
-			var s []string
-			for _, i := range val[:] {
-				s = append(s, strconv.Itoa(int(i)))
-			}
-			ipv4 = ip.String()[:strings.Index(ip.String(), "/")]
-			mask = strings.Join(s, ".")
-			break
+
+	//获取网速
+	result, err := ethHandle.CmdGetMapped(ifacename)
+	if err == nil {
+		speed, ok := result["speed"]
+		if ok && speed != 4294967295 {
+			instates.Speed = speed
 		}
 	}
-	return ipv4, mask, nil
+	return instates
 }
