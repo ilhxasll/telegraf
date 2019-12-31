@@ -69,6 +69,9 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 	for _, iface := range interfaces {
 		interfacesByName[iface.Name] = iface
 	}
+	
+	//获取网关信息
+	gateways := ReadGateways()
 
 	for _, io := range netio {
 		if len(s.Interfaces) != 0 {
@@ -99,9 +102,26 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 		tags := map[string]string{
 			"interface": io.Name,
 		}
+		
+		tiface, _ := interfacesByName[io.Name]
+		
+		//接口配置状态
+		var adminStatus uint32
+		flags := strings.Split(tiface.Flags.String(), "|")
+		if len(flags) > 0 {
+			if strings.ReplaceAll(flags[0], " ", "") == "up" {
+				adminStatus = 1
+			}
+		}
+		
+		//接口运行状态和网速
+		gateway, ok := gateways[io.Name]
+		if !ok {
+			gateway = "000"
+		}
 
 		instates := ReadRunStatus(io.Name)
-		tiface, _ := interfacesByName[io.Name]
+
 		fields := map[string]interface{}{
 			//"sdd" : iface.
 			"index":        tiface.Index,
@@ -110,7 +130,7 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 			"speed":        instates.Speed,
 			"ip":           0,
 			"net_mask":     0,
-			"gateway":      0,
+			"gateway":      gateway,
 			"mac":          tiface.HardwareAddr.String(),
 			"admin_Status": 0,
 			"run_state":    instates.RunStatus,
@@ -133,6 +153,56 @@ func init() {
 	inputs.Add("smnet", func() telegraf.Input {
 		return &SMNetIOStats{ps: system.NewSystemPS()}
 	})
+}
+
+/*
+ * 函数名：Readgateways() map[string]string
+ * 作用：读取网关信息
+ * 返回值：map[网络接口名]网关地址
+ */
+func ReadGateways() map[string]string {
+	cmd := exec.Command("route", "-n")
+	//创建获取命令输出管道
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+	}
+	//执行命令
+	if err := cmd.Start(); err != nil {
+	}
+	//使用带缓冲的读取器
+	outputBuf := bufio.NewReader(stdout)
+	var gateways map[string]string /*创建集合 */
+	gateways = make(map[string]string)
+	var i int
+	for {
+		//一次获取一行,_ 获取当前行是否被读完
+		output, _, err := outputBuf.ReadLine()
+		if err != nil {
+			// 判断是否到文件的结尾了否则出错
+			if err.Error() != "EOF" {
+			}
+			break
+		}
+		if i < 2 {
+			i++
+			continue
+		}
+		tempgate := strings.Split(deleteExtraSpace(string(output)), " ")
+
+		if len(tempgate) == 8 {
+
+			_, ok := gateways[tempgate[7]]
+			if ok {
+				continue
+			}
+			gateways[tempgate[7]] = tempgate[1]
+		}
+	}
+
+	//wait 方法会一直阻塞到其所属的命令完全运行结束为止
+	if err := cmd.Wait(); 
+
+	return gateways
 }
 
 /*
