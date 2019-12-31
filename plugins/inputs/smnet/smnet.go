@@ -21,6 +21,12 @@ type SMNetIOStats struct {
 	Interfaces          []string
 }
 
+//zhaojianyun 接口最大网速与网路接口状态
+type SMIORunStatus struct {
+	RunStatus uint32
+	Speed     uint64
+}
+
 func (_ *SMNetIOStats) Description() string {
 	return "Read metrics about network interface usage"
 }
