@@ -3,7 +3,6 @@ package net
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net"
 	"os/exec"
 	"regexp"
