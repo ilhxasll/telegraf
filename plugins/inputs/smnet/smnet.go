@@ -142,7 +142,6 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 		fields := map[string]interface{}{
 			//"sdd" : iface.
 			"index":        tiface.Index,
-			"name":         tiface.Name,
 			"mtu":          tiface.MTU,
 			"speed":        instates.Speed,
 			"ip":           ipstatus.IP,
