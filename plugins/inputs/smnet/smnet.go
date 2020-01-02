@@ -1,18 +1,21 @@
-package smnet
+package net
 
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/safchain/ethtool"
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/filter"
 	"github.com/influxdata/telegraf/plugins/inputs"
 	"github.com/influxdata/telegraf/plugins/inputs/system"
-	"github.com/safchain/ethtool"
 )
 
 //zhaojyun smnet
@@ -29,6 +32,20 @@ type SMNetIOStats struct {
 type SMIORunStatus struct {
 	RunStatus uint32
 	Speed     uint64
+}
+
+type Gateways struct {
+	gateway uint32
+}
+
+type AdminStatus struct {
+	adminStatus uint32
+}
+
+//ip与网关
+type IPStatus struct {
+	IP   uint32
+	mask uint64
 }
 
 func (_ *SMNetIOStats) Description() string {
@@ -69,6 +86,8 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 	if err != nil {
 		return fmt.Errorf("error getting list of interfaces: %s", err)
 	}
+
+	//网络接口map
 	interfacesByName := map[string]net.Interface{}
 	for _, iface := range interfaces {
 		interfacesByName[iface.Name] = iface
@@ -109,11 +128,19 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 
 		tiface, _ := interfacesByName[io.Name]
 
-		//接口运行状态和网速
-		gateway, ok := gateways[io.Name]
-		if !ok {
-			gateway = "000"
+		//解析mask地址
+		ipstatus, _ := ParseIPMask(tiface)
+
+		//接口配置状态
+		var adminStatus AdminStatus
+		flags := strings.Split(tiface.Flags.String(), "|")
+		if len(flags) > 0 {
+			if strings.ReplaceAll(flags[0], " ", "") == "up" {
+				adminStatus.adminStatus = 1
+			}
 		}
+		//接口运行状态和网速
+		gateway := ReadGateways(io.Name)
 
 		instates := ReadRunStatus(io.Name)
 
@@ -123,12 +150,12 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 			"name":         tiface.Name,
 			"mtu":          tiface.MTU,
 			"speed":        instates.Speed,
-			"ip":           0,
-			"net_mask":     0,
-			"gateway":      gateway,
+			"ip":           ipstatus.IP,
+			"net_mask":     ipstatus.mask,
+			"gateway":      gateway.gateway,
 			"mac":          tiface.HardwareAddr.String(),
-			"admin_Status": 0,
-			"run_state":    instates.RunStatus,
+			"admin_status": adminStatus.adminStatus,
+			"run_status":   instates.RunStatus,
 			"bytes_sent":   io.BytesSent,
 			"bytes_recv":   io.BytesRecv,
 			"packets_sent": io.PacketsSent,
@@ -141,6 +168,24 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 		acc.AddCounter("smnet", fields, tags)
 	}
 
+	// Get system wide stats for different network protocols
+	// (ignore these stats if the call fails)
+	if !s.IgnoreProtocolStats {
+		netprotos, _ := s.ps.NetProto()
+		fields := make(map[string]interface{})
+		for _, proto := range netprotos {
+			for stat, value := range proto.Stats {
+				name := fmt.Sprintf("%s_%s", strings.ToLower(proto.Protocol),
+					strings.ToLower(stat))
+				fields[name] = value
+			}
+		}
+		tags := map[string]string{
+			"interface": "all",
+		}
+		acc.AddFields("smnet", fields, tags)
+	}
+
 	return nil
 }
 
@@ -148,6 +193,40 @@ func init() {
 	inputs.Add("smnet", func() telegraf.Input {
 		return &SMNetIOStats{ps: system.NewSystemPS()}
 	})
+
+}
+
+/*
+ * 函数名： ParseIPMask(iface net.Interface)
+ * 作用：根据IP解析Mask地址
+ * 返回值：IP地址，MASK地址
+ */
+func ParseIPMask(iface net.Interface) (IPStatus, error) {
+	var ipstatu IPStatus
+
+	adds, err := iface.Addrs()
+	if err != nil {
+		log.Fatal("get network addr failed: ", err)
+		return "", "", err
+	}
+	for _, ip := range adds {
+		if strings.Contains(ip.String(), ".") {
+			_, ipNet, err := net.ParseCIDR(ip.String())
+			if err != nil {
+				fmt.Println(err)
+			}
+			val := make([]byte, len(ipNet.Mask))
+			copy(val, ipNet.Mask)
+			var s []string
+			for _, i := range val[:] {
+				s = append(s, strconv.Itoa(int(i)))
+			}
+			ipstatu.IP = ip.String()[:strings.Index(ip.String(), "/")]
+			ipstatu.mask = strings.Join(s, ".")
+			break
+		}
+	}
+	return ipstatu, nil
 }
 
 /*
@@ -176,14 +255,18 @@ func deleteExtraSpace(s string) string {
  * 作用：读取网关信息
  * 返回值：map[网络接口名]网关地址
  */
-func ReadGateways() map[string]string {
+func ReadGateways(name string) Gateways {
+	var gateway Gateways
+
 	cmd := exec.Command("route", "-n")
 	//创建获取命令输出管道
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
+		fmt.Printf("Error:can not obtain stdout pipe for command:%s\n", err)
 	}
 	//执行命令
 	if err := cmd.Start(); err != nil {
+		fmt.Println("Error:The command is err,", err)
 	}
 	//使用带缓冲的读取器
 	outputBuf := bufio.NewReader(stdout)
@@ -194,6 +277,10 @@ func ReadGateways() map[string]string {
 		//一次获取一行,_ 获取当前行是否被读完
 		output, _, err := outputBuf.ReadLine()
 		if err != nil {
+			// 判断是否到文件的结尾了否则出错
+			if err.Error() != "EOF" {
+				fmt.Printf("Error :%s\n", err)
+			}
 			break
 		}
 		if i < 2 {
@@ -214,9 +301,15 @@ func ReadGateways() map[string]string {
 
 	//wait 方法会一直阻塞到其所属的命令完全运行结束为止
 	if err := cmd.Wait(); err != nil {
+		fmt.Println("wait:", err.Error())
 	}
 
-	return gateways
+	gateway.gateway, ok = gateways[name]
+	if !ok {
+		gateway.gateway = "---"
+	}
+
+	return gateway
 }
 
 /*
@@ -228,7 +321,9 @@ func ReadRunStatus(ifacename string) SMIORunStatus {
 
 	//获取ethtool命令句柄
 	ethHandle, err := ethtool.NewEthtool()
-
+	if err != nil {
+		panic(err.Error())
+	}
 	defer ethHandle.Close()
 
 	var instates SMIORunStatus
