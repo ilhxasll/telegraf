@@ -203,7 +203,7 @@ func ParseIPMask(iface net.Interface) (IPStatus, error) {
 	adds, err := iface.Addrs()
 	if err != nil {
 		log.Fatal("get network addr failed: ", err)
-		return nil, err
+		return "", err
 	}
 	for _, ip := range adds {
 		if strings.Contains(ip.String(), ".") {
@@ -300,11 +300,7 @@ func ReadGateways(name string) Gateways {
 		fmt.Println("wait:", err.Error())
 	}
 
-	gateway.gateway, ok = gateways[name]
-	if !ok {
-		gateway.gateway = "---"
-	}
-
+	gateway.gateway = gateways[name]
 	return gateway
 }
 
