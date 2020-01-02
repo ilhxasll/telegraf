@@ -313,9 +313,6 @@ func ReadRunStatus(ifacename string) SMIORunStatus {
 
 	//获取ethtool命令句柄
 	ethHandle, err := ethtool.NewEthtool()
-	if err != nil {
-		panic(err.Error())
-	}
 	defer ethHandle.Close()
 
 	var instates SMIORunStatus
