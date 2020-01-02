@@ -199,7 +199,9 @@ func init() {
 func ParseIPMask(iface net.Interface) (IPStatus, error) {
 	var ipstatu IPStatus
 
-	adds := iface.Addrs()
+	adds err:= iface.Addrs()
+	if err != nil {
+	}
 	for _, ip := range adds {
 		if strings.Contains(ip.String(), ".") {
 			_, ipNet, err := net.ParseCIDR(ip.String())
