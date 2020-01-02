@@ -3,13 +3,13 @@ package smnet
 import (
 	"bufio"
 	"fmt"
+	"github.com/safchain/ethtool"
+	"log"
 	"net"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/safchain/ethtool"
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/filter"
@@ -33,18 +33,11 @@ type SMIORunStatus struct {
 	Speed     uint64
 }
 
-type Gateways struct {
-	gateway string
-}
-
-type AdminStatus struct {
+type SMIODiyInfo struct {
+	ip          string
+	mask        string
+	gateway     string
 	adminStatus uint32
-}
-
-//ip与网关
-type IPStatus struct {
-	IP   string
-	mask string
 }
 
 func (_ *SMNetIOStats) Description() string {
@@ -92,6 +85,9 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 		interfacesByName[iface.Name] = iface
 	}
 
+	//获取网关信息
+	gateways := ReadGateways()
+
 	for _, io := range netio {
 		if len(s.Interfaces) != 0 {
 			var found bool
@@ -125,30 +121,36 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 		tiface, _ := interfacesByName[io.Name]
 
 		//解析mask地址
-		ipstatus, _ := ParseIPMask(tiface)
+		ip, mask, _ := ParseIPMask(tiface)
 
-		//接口配置状态
-		var adminStatus AdminStatus
-		flags := strings.Split(tiface.Flags.String(), "|")
-		if len(flags) > 0 {
-			if strings.ReplaceAll(flags[0], " ", "") == "up" {
-				adminStatus.adminStatus = 1
-			}
+		////接口配置状态
+		var adminStatus uint32
+		if tiface.Flags&net.FlagUp == 1 {
+			adminStatus = 1
 		}
-		//获取网关信息
-		gateway := ReadGateways(io.Name)
+
 		//接口运行状态和网速
+		gateway, ok := gateways[io.Name]
+		if !ok {
+			gateway = "---"
+		}
+
+		var ioDiyInfo SMIODiyInfo
+		ioDiyInfo.ip= ip
+		ioDiyInfo.mask = mask
+		ioDiyInfo.gateway = gateway
+		ioDiyInfo.adminStatus = adminStatus
 		instates := ReadRunStatus(io.Name)
+
 		fields := map[string]interface{}{
-			//"sdd" : iface.
 			"index":        tiface.Index,
 			"mtu":          tiface.MTU,
 			"speed":        instates.Speed,
-			"ip":           ipstatus.IP,
-			"net_mask":     ipstatus.mask,
-			"gateway":      gateway.gateway,
+			"ip":           ioDiyInfo.ip,
+			"net_mask":     ioDiyInfo.mask,
+			"gateway":      ioDiyInfo.gateway,
 			"mac":          tiface.HardwareAddr.String(),
-			"admin_status": adminStatus.adminStatus,
+			"admin_status": ioDiyInfo.adminStatus,
 			"run_status":   instates.RunStatus,
 			"bytes_sent":   io.BytesSent,
 			"bytes_recv":   io.BytesRecv,
@@ -160,24 +162,6 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 			"drop_out":     io.Dropout,
 		}
 		acc.AddCounter("smnet", fields, tags)
-	}
-
-	// Get system wide stats for different network protocols
-	// (ignore these stats if the call fails)
-	if !s.IgnoreProtocolStats {
-		netprotos, _ := s.ps.NetProto()
-		fields := make(map[string]interface{})
-		for _, proto := range netprotos {
-			for stat, value := range proto.Stats {
-				name := fmt.Sprintf("%s_%s", strings.ToLower(proto.Protocol),
-					strings.ToLower(stat))
-				fields[name] = value
-			}
-		}
-		tags := map[string]string{
-			"interface": "all",
-		}
-		acc.AddFields("smnet", fields, tags)
 	}
 
 	return nil
@@ -195,17 +179,19 @@ func init() {
  * 作用：根据IP解析Mask地址
  * 返回值：IP地址，MASK地址
  */
-func ParseIPMask(iface net.Interface) (IPStatus, error) {
-	var ipstatu IPStatus
-
+func ParseIPMask(iface net.Interface) (string, string, error) {
 	adds, err := iface.Addrs()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal("get network addr failed: ", err)
+		return "", "", err
 	}
+	ipv4 := "--"
+	mask := "--"
 	for _, ip := range adds {
 		if strings.Contains(ip.String(), ".") {
 			_, ipNet, err := net.ParseCIDR(ip.String())
 			if err != nil {
+				fmt.Println(err)
 			}
 			val := make([]byte, len(ipNet.Mask))
 			copy(val, ipNet.Mask)
@@ -213,12 +199,12 @@ func ParseIPMask(iface net.Interface) (IPStatus, error) {
 			for _, i := range val[:] {
 				s = append(s, strconv.Itoa(int(i)))
 			}
-			ipstatu.IP = ip.String()[:strings.Index(ip.String(), "/")]
-			ipstatu.mask = strings.Join(s, ".")
+			ipv4 = ip.String()[:strings.Index(ip.String(), "/")]
+			mask = strings.Join(s, ".")
 			break
 		}
 	}
-	return ipstatu, nil
+	return ipv4, mask, nil
 }
 
 /*
@@ -247,9 +233,7 @@ func deleteExtraSpace(s string) string {
  * 作用：读取网关信息
  * 返回值：map[网络接口名]网关地址
  */
-func ReadGateways(name string) Gateways {
-	var gateway Gateways
-
+func ReadGateways() map[string]string {
 	cmd := exec.Command("route", "-n")
 	//创建获取命令输出管道
 	stdout, err := cmd.StdoutPipe()
@@ -296,8 +280,7 @@ func ReadGateways(name string) Gateways {
 		fmt.Println("wait:", err.Error())
 	}
 
-	gateway.gateway = gateways[name]
-	return gateway
+	return gateways
 }
 
 /*
@@ -309,6 +292,9 @@ func ReadRunStatus(ifacename string) SMIORunStatus {
 
 	//获取ethtool命令句柄
 	ethHandle, err := ethtool.NewEthtool()
+	if err != nil {
+		panic(err.Error())
+	}
 	defer ethHandle.Close()
 
 	var instates SMIORunStatus
