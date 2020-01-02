@@ -204,7 +204,6 @@ func ParseIPMask(iface net.Interface) (IPStatus, error) {
 		if strings.Contains(ip.String(), ".") {
 			_, ipNet, err := net.ParseCIDR(ip.String())
 			if err != nil {
-				fmt.Println(err)
 			}
 			val := make([]byte, len(ipNet.Mask))
 			copy(val, ipNet.Mask)
