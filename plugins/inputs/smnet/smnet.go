@@ -35,7 +35,7 @@ type SMIORunStatus struct {
 }
 
 type Gateways struct {
-	gateway uint32
+	gateway string
 }
 
 type AdminStatus struct {
@@ -44,8 +44,8 @@ type AdminStatus struct {
 
 //ip与网关
 type IPStatus struct {
-	IP   uint32
-	mask uint64
+	IP   string
+	mask string
 }
 
 func (_ *SMNetIOStats) Description() string {
@@ -93,9 +93,6 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 		interfacesByName[iface.Name] = iface
 	}
 
-	//获取网关信息
-	gateways := ReadGateways()
-
 	for _, io := range netio {
 		if len(s.Interfaces) != 0 {
 			var found bool
@@ -139,11 +136,10 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 				adminStatus.adminStatus = 1
 			}
 		}
-		//接口运行状态和网速
+		//获取网关信息
 		gateway := ReadGateways(io.Name)
-
+		//接口运行状态和网速
 		instates := ReadRunStatus(io.Name)
-
 		fields := map[string]interface{}{
 			//"sdd" : iface.
 			"index":        tiface.Index,
@@ -207,7 +203,7 @@ func ParseIPMask(iface net.Interface) (IPStatus, error) {
 	adds, err := iface.Addrs()
 	if err != nil {
 		log.Fatal("get network addr failed: ", err)
-		return "", "", err
+		return nil, err
 	}
 	for _, ip := range adds {
 		if strings.Contains(ip.String(), ".") {
