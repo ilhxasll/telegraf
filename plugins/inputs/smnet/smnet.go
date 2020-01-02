@@ -201,10 +201,6 @@ func ParseIPMask(iface net.Interface) (IPStatus, error) {
 	var ipstatu IPStatus
 
 	adds, err := iface.Addrs()
-	if err != nil {
-		log.Fatal("get network addr failed: ", err)
-		return "", err
-	}
 	for _, ip := range adds {
 		if strings.Contains(ip.String(), ".") {
 			_, ipNet, err := net.ParseCIDR(ip.String())
