@@ -3,13 +3,14 @@ package smnet
 import (
 	"bufio"
 	"fmt"
-	"github.com/safchain/ethtool"
 	"log"
 	"net"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/safchain/ethtool"
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/filter"
@@ -136,7 +137,7 @@ func (s *SMNetIOStats) Gather(acc telegraf.Accumulator) error {
 		}
 
 		var ioDiyInfo SMIODiyInfo
-		ioDiyInfo.ip= ip
+		ioDiyInfo.ip = ip
 		ioDiyInfo.mask = mask
 		ioDiyInfo.gateway = gateway
 		ioDiyInfo.adminStatus = adminStatus
