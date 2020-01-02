@@ -201,6 +201,7 @@ func ParseIPMask(iface net.Interface) (IPStatus, error) {
 
 	adds := iface.Addrs()
 	if err != nil {
+		fmt.Println(err)
 	}
 	for _, ip := range adds {
 		if strings.Contains(ip.String(), ".") {
